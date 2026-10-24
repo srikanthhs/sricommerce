@@ -5,6 +5,14 @@ import type { User } from "./types";
 
 export const SESSION_COOKIE = "qc_session";
 
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 30,
+};
+
 export function adminPhones(): string[] {
   // The 9999999999 fallback is for local development only; production must set ADMIN_PHONES.
   const fallback = process.env.NODE_ENV === "production" ? "" : "9999999999";
@@ -40,6 +48,10 @@ export async function verifyOtp(phone: string, code: string): Promise<string | n
   const row = await one<{ code: string; expires_at: string }>("SELECT code, expires_at FROM otps WHERE phone = $1", [phone]);
   if (!row || Number(row.expires_at) < Date.now() || row.code !== code) return null;
   await run("DELETE FROM otps WHERE phone = $1", [phone]);
+  return createSession(phone);
+}
+
+export async function createSession(phone: string): Promise<string> {
   await run("INSERT INTO users (phone) VALUES ($1) ON CONFLICT (phone) DO NOTHING", [phone]);
   const [{ id }] = await all<{ id: number }>("SELECT id FROM users WHERE phone = $1", [phone]);
   const token = crypto.randomBytes(32).toString("hex");

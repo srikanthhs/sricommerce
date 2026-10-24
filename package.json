@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.11",
+    "firebase": "^13.1.0",
+    "jose": "^6.2.13",
     "next": "16.0.0",
     "pg": "^8.23.1",
     "react": "19.2.0",
