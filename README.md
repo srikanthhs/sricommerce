@@ -32,6 +32,10 @@ The app uses Postgres. Locally, with no `DATABASE_URL` set, it runs an embedded 
 
 To log in as admin, enter your number, then find the OTP in **Logs** (search for `[otp]`).
 
+## Google (Gmail) login
+
+Free on Firebase's Spark plan. Enable **Authentication → Sign-in method → Google** and make sure the site's domain is in **Authorized domains**. The "Continue with Google" button shows whenever the Firebase config is set (`NEXT_PUBLIC_GOOGLE_LOGIN=false` hides it). Add admin Google accounts with `ADMIN_EMAILS=you@gmail.com`.
+
 ## Real SMS login with Firebase
 
 1. Create a project at [console.firebase.google.com](https://console.firebase.google.com) and add a **Web app**.

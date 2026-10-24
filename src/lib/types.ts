@@ -3,7 +3,7 @@ export type Product = {
   id: number; category_id: number; name: string; unit: string;
   price: number; mrp: number; stock: number; emoji: string; active: number;
 };
-export type User = { id: number; phone: string; name: string | null };
+export type User = { id: number; phone: string | null; email: string | null; name: string | null };
 export type OrderStatus = "placed" | "packed" | "out_for_delivery" | "delivered" | "cancelled";
 export type Order = {
   id: number; user_id: number; status: OrderStatus; address: string; pincode: string;

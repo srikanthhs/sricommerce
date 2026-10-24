@@ -13,6 +13,10 @@ export const SESSION_COOKIE_OPTIONS = {
   maxAge: 60 * 60 * 24 * 30,
 };
 
+export function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+}
+
 export function adminPhones(): string[] {
   // The 9999999999 fallback is for local development only; production must set ADMIN_PHONES.
   const fallback = process.env.NODE_ENV === "production" ? "" : "9999999999";
@@ -48,12 +52,13 @@ export async function verifyOtp(phone: string, code: string): Promise<string | n
   const row = await one<{ code: string; expires_at: string }>("SELECT code, expires_at FROM otps WHERE phone = $1", [phone]);
   if (!row || Number(row.expires_at) < Date.now() || row.code !== code) return null;
   await run("DELETE FROM otps WHERE phone = $1", [phone]);
-  return createSession(phone);
+  return createSession({ phone });
 }
 
-export async function createSession(phone: string): Promise<string> {
-  await run("INSERT INTO users (phone) VALUES ($1) ON CONFLICT (phone) DO NOTHING", [phone]);
-  const [{ id }] = await all<{ id: number }>("SELECT id FROM users WHERE phone = $1", [phone]);
+export async function createSession(who: { phone: string } | { email: string }): Promise<string> {
+  const [column, value] = "phone" in who ? ["phone", who.phone] : ["email", who.email];
+  await run(`INSERT INTO users (${column}) VALUES ($1) ON CONFLICT (${column}) DO NOTHING`, [value]);
+  const [{ id }] = await all<{ id: number }>(`SELECT id FROM users WHERE ${column} = $1`, [value]);
   const token = crypto.randomBytes(32).toString("hex");
   await run("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", [token, id]);
   return token;
@@ -63,12 +68,13 @@ export async function currentUser(): Promise<User | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const user = await one<User>(
-    "SELECT u.id, u.phone, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
+    "SELECT u.id, u.phone, u.email, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
     [token],
   );
   return user ?? null;
 }
 
 export function isAdmin(user: User | null): boolean {
-  return !!user && adminPhones().includes(user.phone);
+  if (!user) return false;
+  return (!!user.phone && adminPhones().includes(user.phone)) || (!!user.email && adminEmails().includes(user.email));
 }
