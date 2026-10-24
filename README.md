@@ -19,7 +19,7 @@ npm run dev     # http://localhost:3000
 
 The app uses Postgres. Locally, with no `DATABASE_URL` set, it runs an embedded Postgres (PGlite) stored in `data/pglite`, so there's nothing to install. Tables are created and seeded on first request. Delete `data/` to reset.
 
-- **OTP:** no SMS provider is wired yet. In development (or with `SHOW_OTP_ON_SCREEN=true`) the code is shown on the login screen. It is always logged to the server console.
+- **OTP:** with the Firebase variables set (see below), Firebase sends real SMS codes. Without them, a built-in fallback is used. In development (or with `SHOW_OTP_ON_SCREEN=true`) the code is shown on the login screen. It is always logged to the server console.
 - **Admin:** locally, log in with `9999999999`. In production set `ADMIN_PHONES=9xxxxxxxxx,8xxxxxxxxx`; admin OTPs are only in the server logs, never on screen.
 - **Delivery zones:** placeholder pincodes `560001`–`560003` in `src/lib/seed.ts`. Replace them with your launch area.
 
@@ -31,6 +31,16 @@ The app uses Postgres. Locally, with no `DATABASE_URL` set, it runs an embedded 
 4. Redeploy. Tables and sample products are created on the first visit.
 
 To log in as admin, enter your number, then find the OTP in **Logs** (search for `[otp]`).
+
+## Real SMS login with Firebase
+
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com) and add a **Web app**.
+2. **Authentication → Sign-in method → Phone**: enable it. Optionally add test numbers with fixed codes.
+3. **Authentication → Settings → Authorized domains**: add `sricommerce.vercel.app`.
+4. Copy the web app's `apiKey`, `authDomain`, `projectId` and `appId` into the `NEXT_PUBLIC_FIREBASE_*` variables (Vercel → Settings → Environment Variables), then redeploy.
+
+Firebase's Spark (free) plan doesn't send SMS; phone auth needs the Blaze (pay as you go) plan, with a small number of free verifications each month.
+The server checks the Firebase ID token against Google's public keys, so no service-account secret is needed. Admins are still the numbers in `ADMIN_PHONES`.
 
 ## Layout
 
