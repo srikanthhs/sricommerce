@@ -1,0 +1,22 @@
+export type Category = { id: number; slug: string; name: string; emoji: string };
+export type Product = {
+  id: number; category_id: number; name: string; unit: string;
+  price: number; mrp: number; stock: number; emoji: string; active: number;
+};
+export type User = { id: number; phone: string; name: string | null };
+export type OrderStatus = "placed" | "packed" | "out_for_delivery" | "delivered" | "cancelled";
+export type Order = {
+  id: number; user_id: number; status: OrderStatus; address: string; pincode: string;
+  subtotal: number; delivery_fee: number; total: number; payment_method: string;
+  eta_minutes: number; created_at: string; updated_at: string;
+};
+export type OrderItem = { order_id: number; product_id: number; name: string; price: number; qty: number };
+
+export const ORDER_FLOW: OrderStatus[] = ["placed", "packed", "out_for_delivery", "delivered"];
+export const STATUS_LABEL: Record<OrderStatus, string> = {
+  placed: "Order placed",
+  packed: "Packed",
+  out_for_delivery: "Out for delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};

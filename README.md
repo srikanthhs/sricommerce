@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Collectorate Quick Commerce
 
-## Getting Started
+A Blinkit / Instamart style quick commerce web app (MVP).
 
-First, run the development server:
+## What works today
+
+- **Customer:** phone + OTP login, category browsing, search, cart (saved in the browser), delivery address with pincode serviceability check, cash-on-delivery checkout, order tracking (placed → packed → out for delivery → delivered), cancel before packing.
+- **Store admin (`/admin`):** order list with one-click status updates, inventory table to edit price, stock and listing.
+- Stock is checked and decremented in a transaction when an order is placed, and returned when an order is cancelled.
+
+## Run it
+
+Requires Node.js 22.13 or newer (uses the built-in `node:sqlite`, so there are no native dependencies).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The SQLite database is created and seeded at `data/app.db` on first request. Delete that file to reset.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **OTP:** no SMS provider is wired yet. In development the code is shown on the login screen and logged to the server console.
+- **Admin:** log in with `9999999999`, or set `ADMIN_PHONES=9xxxxxxxxx,8xxxxxxxxx`.
+- **Delivery zones:** placeholder pincodes `560001`–`560003` in `src/lib/seed.ts`. Replace them with your launch area.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Layout
 
-## Learn More
+```
+src/lib/        db (schema + seed), auth (OTP, sessions), catalog, orders, pricing
+src/app/api/    auth, orders, serviceability, admin endpoints
+src/app/        pages: home, category, cart, login, orders, admin
+src/components/ header, product card, cart state
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Next steps
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Real SMS OTP (MSG91 / Twilio) and online payments (Razorpay / UPI).
+2. Postgres for production, product images, saved addresses.
+3. Delivery partner app and live order tracking (map + websockets).
+4. Multiple dark stores with per-store inventory and zone polygons.
+5. React Native customer app on the same API.
