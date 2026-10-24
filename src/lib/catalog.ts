@@ -25,6 +25,16 @@ export function listProducts(opts: { categoryId?: number; q?: string; includeIna
   return all<Product>(sql, params);
 }
 
-export function findZone(pincode: string) {
-  return one<{ pincode: string; area: string; eta_minutes: number }>("SELECT * FROM zones WHERE pincode = $1", [pincode]);
+type Zone = { pincode: string; area: string; eta_minutes: number };
+
+// Delivery ETA for pincodes that aren't listed in the zones table.
+const DEFAULT_ETA_MINUTES = 30;
+
+// Listed zones keep their own area name and ETA. Every other valid Indian pincode is
+// served too, unless ALLOW_ALL_PINCODES=false limits delivery to the zones table.
+export async function findZone(pincode: string): Promise<Zone | undefined> {
+  if (!/^[1-9]\d{5}$/.test(pincode)) return undefined;
+  const zone = await one<Zone>("SELECT * FROM zones WHERE pincode = $1", [pincode]);
+  if (zone || process.env.ALLOW_ALL_PINCODES === "false") return zone;
+  return { pincode, area: `pincode ${pincode}`, eta_minutes: DEFAULT_ETA_MINUTES };
 }

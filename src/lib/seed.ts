@@ -42,7 +42,7 @@ export const seedProducts = [
 
 // Placeholder delivery zones. Replace with the real launch area's pincodes.
 export const seedZones = [
-  { pincode: "560001", area: "Zone 1 (placeholder)", eta: 10 },
-  { pincode: "560002", area: "Zone 2 (placeholder)", eta: 15 },
-  { pincode: "560003", area: "Zone 3 (placeholder)", eta: 20 },
+  { pincode: "560001", area: "Zone 1", eta: 10 },
+  { pincode: "560002", area: "Zone 2", eta: 15 },
+  { pincode: "560003", area: "Zone 3", eta: 20 },
 ];

@@ -100,6 +100,8 @@ async function init(): Promise<Driver> {
   const driver = url ? await pgDriver(url) : await pgliteDriver();
   for (const stmt of SCHEMA.split(";").filter((s) => s.trim())) await driver.query(stmt);
   await seed(driver);
+  // Early databases were seeded with "(placeholder)" zone names that customers could see.
+  await driver.query("UPDATE zones SET area = replace(area, ' (placeholder)', '') WHERE area LIKE '% (placeholder)'");
   return driver;
 }
 

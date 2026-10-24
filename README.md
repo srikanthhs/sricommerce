@@ -21,7 +21,7 @@ The app uses Postgres. Locally, with no `DATABASE_URL` set, it runs an embedded 
 
 - **OTP:** with the Firebase variables set (see below), Firebase sends real SMS codes. Without them, a built-in fallback is used. In development (or with `SHOW_OTP_ON_SCREEN=true`) the code is shown on the login screen. It is always logged to the server console.
 - **Admin:** locally, log in with `9999999999`. In production set `ADMIN_PHONES=9xxxxxxxxx,8xxxxxxxxx`; admin OTPs are only in the server logs, never on screen.
-- **Delivery zones:** placeholder pincodes `560001`–`560003` in `src/lib/seed.ts`. Replace them with your launch area.
+- **Delivery zones:** every valid 6-digit pincode is deliverable (30 min ETA). Pincodes listed in the `zones` table (seeded from `src/lib/seed.ts`) get their own area name and ETA. Set `ALLOW_ALL_PINCODES=false` to deliver only to listed pincodes.
 
 ## Deploy to Vercel
 
