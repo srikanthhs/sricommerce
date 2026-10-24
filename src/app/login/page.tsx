@@ -127,6 +127,7 @@ function friendlyError(err: unknown): string {
   if (code === "auth/invalid-verification-code") return "Incorrect OTP.";
   if (code === "auth/code-expired") return "OTP expired. Please request a new one.";
   if (code === "auth/too-many-requests") return "Too many attempts. Please try again later.";
+  if (code === "auth/operation-not-allowed") return "Phone login isn't enabled yet. Please try again later.";
   if (code === "auth/invalid-phone-number") return "Enter a valid 10-digit mobile number.";
   return err instanceof Error ? err.message : "Something went wrong.";
 }
