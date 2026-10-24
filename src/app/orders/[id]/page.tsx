@@ -11,7 +11,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const user = await currentUser();
   if (!user) redirect(`/login?next=/orders/${id}`);
-  const found = getOrder(Number(id));
+  const found = await getOrder(Number(id));
   if (!found || (found.order.user_id !== user.id && !isAdmin(user))) notFound();
   const { order, items } = found;
   const step = ORDER_FLOW.indexOf(order.status);

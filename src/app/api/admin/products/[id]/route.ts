@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUser, isAdmin } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { one } from "@/lib/db";
 
 // Update price (paise), stock, or active flag for a product.
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -13,12 +13,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (body[key] === undefined) continue;
     const v = Number(body[key]);
     if (!Number.isInteger(v) || v < 0) return NextResponse.json({ error: `Invalid ${key}.` }, { status: 400 });
-    sets.push(`${key} = ?`);
     params.push(key === "active" ? (v ? 1 : 0) : v);
+    sets.push(`${key} = $${params.length}`);
   }
   if (!sets.length) return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
-  const db = getDb();
-  const { changes } = db.prepare(`UPDATE products SET ${sets.join(", ")} WHERE id = ?`).run(...params, id);
-  if (!changes) return NextResponse.json({ error: "Product not found." }, { status: 404 });
-  return NextResponse.json({ product: db.prepare("SELECT * FROM products WHERE id = ?").get(id) });
+  if (!Number.isInteger(id)) return NextResponse.json({ error: "Product not found." }, { status: 404 });
+  const product = await one(`UPDATE products SET ${sets.join(", ")} WHERE id = $${params.length + 1} RETURNING *`, [...params, id]);
+  if (!product) return NextResponse.json({ error: "Product not found." }, { status: 404 });
+  return NextResponse.json({ product });
 }

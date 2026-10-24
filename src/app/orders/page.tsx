@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function OrdersPage() {
   const user = await currentUser();
   if (!user) redirect("/login?next=/orders");
-  const orders = listOrders(user.id);
+  const orders = await listOrders(user.id);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -22,7 +22,7 @@ export default async function OrdersPage() {
             <Link href={`/orders/${o.id}`} className="flex items-center justify-between rounded-xl bg-white p-4 hover:shadow">
               <div>
                 <p className="font-semibold">Order #{o.id}</p>
-                <p className="text-xs text-gray-500">{new Date(o.created_at + "Z").toLocaleString("en-IN")}</p>
+                <p className="text-xs text-gray-500">{new Date(o.created_at).toLocaleString("en-IN")}</p>
               </div>
               <div className="text-right">
                 <p className="font-semibold">{rupees(o.total)}</p>

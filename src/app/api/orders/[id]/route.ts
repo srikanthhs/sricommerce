@@ -6,7 +6,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 async function load(ctx: Ctx) {
   const user = await currentUser();
-  const found = getOrder(Number((await ctx.params).id));
+  const found = await getOrder(Number((await ctx.params).id));
   if (!user || !found || (found.order.user_id !== user.id && !isAdmin(user))) return null;
   return found;
 }
@@ -25,7 +25,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "This order can no longer be cancelled." }, { status: 400 });
   }
   try {
-    return NextResponse.json({ order: setOrderStatus(found.order.id, "cancelled") });
+    return NextResponse.json({ order: await setOrderStatus(found.order.id, "cancelled") });
   } catch (err) {
     if (err instanceof OrderError) return NextResponse.json({ error: err.message }, { status: 400 });
     throw err;

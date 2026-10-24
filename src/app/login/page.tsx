@@ -31,7 +31,7 @@ export default function LoginPage() {
             const data = await post("/api/auth/send-otp", { phone });
             if (data) {
               setSent(true);
-              if (data.devCode) setHint(`Dev mode: your OTP is ${data.devCode}`);
+              if (data.devCode) setHint(`Demo mode: your OTP is ${data.devCode}`);
             }
           }}
         >

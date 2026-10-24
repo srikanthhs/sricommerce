@@ -7,14 +7,14 @@ export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const category = getCategory(slug);
+  const category = await getCategory(slug);
   if (!category) notFound();
-  const products = listProducts({ categoryId: category.id });
+  const [products, categories] = await Promise.all([listProducts({ categoryId: category.id }), listCategories()]);
 
   return (
     <div className="flex gap-4">
       <aside className="hidden w-48 shrink-0 space-y-1 sm:block">
-        {listCategories().map((c) => (
+        {categories.map((c) => (
           <Link
             key={c.id}
             href={`/category/${c.slug}`}

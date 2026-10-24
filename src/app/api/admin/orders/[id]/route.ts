@@ -10,7 +10,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const { status } = await req.json().catch(() => ({}));
   if (!STATUSES.includes(status)) return NextResponse.json({ error: "Invalid status." }, { status: 400 });
   try {
-    return NextResponse.json({ order: setOrderStatus(Number((await ctx.params).id), status) });
+    return NextResponse.json({ order: await setOrderStatus(Number((await ctx.params).id), status) });
   } catch (err) {
     if (err instanceof OrderError) return NextResponse.json({ error: err.message }, { status: 400 });
     throw err;

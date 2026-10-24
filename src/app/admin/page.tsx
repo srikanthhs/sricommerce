@@ -11,9 +11,12 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   if (!isAdmin(await currentUser())) notFound();
-  const orders = listOrders();
-  const products = listProducts({ includeInactive: true });
-  const categories = new Map(listCategories().map((c) => [c.id, c.name]));
+  const [orders, products, categoryList] = await Promise.all([
+    listOrders(),
+    listProducts({ includeInactive: true }),
+    listCategories(),
+  ]);
+  const categories = new Map(categoryList.map((c) => [c.id, c.name]));
   const open = orders.filter((o) => o.status !== "delivered" && o.status !== "cancelled");
 
   return (
@@ -30,7 +33,7 @@ export default async function AdminPage() {
               {orders.map((o) => (
                 <tr key={o.id}>
                   <td className="p-3"><Link href={`/orders/${o.id}`} className="font-semibold text-green-700">#{o.id}</Link></td>
-                  <td className="p-3">{new Date(o.created_at + "Z").toLocaleString("en-IN")}</td>
+                  <td className="p-3">{new Date(o.created_at).toLocaleString("en-IN")}</td>
                   <td className="p-3">{o.pincode}</td>
                   <td className="p-3">{rupees(o.total)}</td>
                   <td className="p-3">{STATUS_LABEL[o.status]}</td>

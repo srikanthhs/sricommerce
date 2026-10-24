@@ -8,7 +8,7 @@ export type OrderStatus = "placed" | "packed" | "out_for_delivery" | "delivered"
 export type Order = {
   id: number; user_id: number; status: OrderStatus; address: string; pincode: string;
   subtotal: number; delivery_fee: number; total: number; payment_method: string;
-  eta_minutes: number; created_at: string; updated_at: string;
+  eta_minutes: number; created_at: Date | string; updated_at: Date | string;
 };
 export type OrderItem = { order_id: number; product_id: number; name: string; price: number; qty: number };
 

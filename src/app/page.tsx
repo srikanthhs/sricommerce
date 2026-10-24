@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { listCategories, listProducts } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
+import type { Product } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const q = (await searchParams).q?.trim();
-  const categories = listCategories();
-  const products = listProducts({ q });
+  const [categories, products] = await Promise.all([listCategories(), listProducts({ q })]);
 
   if (q) {
     return (
@@ -54,7 +54,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   );
 }
 
-function Grid({ products }: { products: ReturnType<typeof listProducts> }) {
+function Grid({ products }: { products: Product[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
       {products.map((p) => (
