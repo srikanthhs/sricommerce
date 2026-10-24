@@ -37,7 +37,9 @@ To log in as admin, enter your number, then find the OTP in **Logs** (search for
 1. Create a project at [console.firebase.google.com](https://console.firebase.google.com) and add a **Web app**.
 2. **Authentication → Sign-in method → Phone**: enable it. Optionally add test numbers with fixed codes.
 3. **Authentication → Settings → Authorized domains**: add `sricommerce.vercel.app`.
-4. Copy the web app's `apiKey`, `authDomain`, `projectId` and `appId` into the `NEXT_PUBLIC_FIREBASE_*` variables (Vercel → Settings → Environment Variables), then redeploy.
+4. Put the web app's `apiKey`, `authDomain`, `projectId` and `appId` in the `NEXT_PUBLIC_FIREBASE_*` variables (already in `.env.production` for project `sricommerce-697b1`).
+5. Upgrade to the Blaze plan and allow India under **Authentication → Settings → SMS region policy**.
+6. Set `NEXT_PUBLIC_FIREBASE_LOGIN=true` (in `.env.production` or Vercel) and redeploy.
 
 Firebase's Spark (free) plan doesn't send SMS; phone auth needs the Blaze (pay as you go) plan, with a small number of free verifications each month.
 The server checks the Firebase ID token against Google's public keys, so no service-account secret is needed. Admins are still the numbers in `ADMIN_PHONES`.

@@ -7,6 +7,7 @@ export const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// SMS needs the Firebase Blaze plan, so Firebase login stays off until this switch is "true".
 export function firebaseEnabled(): boolean {
-  return !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+  return process.env.NEXT_PUBLIC_FIREBASE_LOGIN === "true" && !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 }
