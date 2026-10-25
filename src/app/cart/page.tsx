@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useCart, type CartItem } from "@/components/CartProvider";
 import { BUY_NOW_KEY, type BuyNowItem } from "@/components/BuyNowButton";
+import { PINCODE_KEY } from "@/components/DeliverTo";
 import { deliveryFee, discountFor, FREE_DELIVERY_ABOVE, MAX_QTY_PER_ITEM, rupees, type CouponRule } from "@/lib/pricing";
 
 type Zone = { pincode: string; serviceable: boolean; area?: string; eta?: number };
@@ -56,7 +57,14 @@ export default function CartPage() {
     fetch("/api/me/address")
       .then((r) => r.json())
       .then(({ address: last }) => {
-        if (!last) return;
+        if (!last) {
+          // Fall back to the pincode chosen in the "Deliver to" strip.
+          try {
+            const pin = localStorage.getItem(PINCODE_KEY);
+            if (pin) setPincode((p) => p || pin);
+          } catch {}
+          return;
+        }
         setAddress((a) => a || last.address);
         setPincode((p) => p || last.pincode);
       })
@@ -104,6 +112,9 @@ export default function CartPage() {
     setBusy(false);
     if (res.status === 401) return (window.location.href = "/login?next=/cart");
     if (!res.ok) return setError(data.error);
+    try {
+      localStorage.setItem(PINCODE_KEY, pincode);
+    } catch {}
     if (buyNow) {
       try {
         sessionStorage.removeItem(BUY_NOW_KEY);

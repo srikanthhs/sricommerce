@@ -8,6 +8,7 @@ A Blinkit / Instamart style quick commerce web app (MVP).
 - **Store admin (`/admin`):** today's orders and sales, order list with one-click status updates, inventory table to edit price, stock and listing, an add-product form, and coupon management.
 - **Coupons:** percent or flat discounts with a minimum order, optional cap and first-order-only rule. Seeded with `WELCOME50` and `SAVE30`.
 - **Amazon-style shopping:** product pages, ratings and reviews (only after the item is delivered, shown as "Verified purchase"), "Buy now" (checks out one item without touching the cart), a wishlist, sort and filter on categories and search (price, discount, rating, price cap, in stock), and "Similar products" / "Frequently bought together" suggestions.
+- **App-style mobile layout:** full-width search, a "Deliver to" pincode strip, a bottom tab bar (Home, Categories, Wishlist, You, Cart), swipeable category and product rows, Today's deals, and a sticky Add / Buy now bar on product pages.
 - **Convenience:** checkout remembers the last delivery address, and past orders have an "Order again" button.
 - Stock is checked and decremented in a transaction when an order is placed, and returned when an order is cancelled.
 

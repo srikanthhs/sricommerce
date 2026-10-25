@@ -30,15 +30,15 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const histogram = [5, 4, 3, 2, 1].map((n) => ({ n, count: reviews.filter((r) => r.rating === n).length }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-16 sm:pb-0">
       <nav className="text-sm text-gray-500">
         <Link href="/" className="hover:underline">Home</Link>
         {category && <> › <Link href={`/category/${category.slug}`} className="hover:underline">{category.name}</Link></>}
         {" "}› <span className="text-gray-800">{product.name}</span>
       </nav>
 
-      <section className="grid gap-6 rounded-2xl bg-white p-6 md:grid-cols-2">
-        <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50 text-9xl">{product.emoji}</div>
+      <section className="grid gap-6 rounded-2xl bg-white p-4 sm:p-6 md:grid-cols-2">
+        <div className="flex h-48 items-center justify-center rounded-xl bg-gray-50 text-8xl sm:h-64 sm:text-9xl">{product.emoji}</div>
         <div className="space-y-3">
           <h1 className="text-2xl font-bold">{product.name}</h1>
           <p className="text-gray-500">{product.unit}</p>
@@ -61,8 +61,10 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             {product.stock <= 0 ? "Out of stock" : product.stock < 10 ? `Only ${product.stock} left` : "In stock"}
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <AddButton product={product} />
-            <BuyNowButton product={product} />
+            <div className="hidden items-center gap-3 sm:flex">
+              <AddButton product={product} />
+              <BuyNowButton product={product} />
+            </div>
             <WishlistButton productId={product.id} initial={wishlisted} loggedIn={!!user} />
           </div>
         </div>
@@ -124,6 +126,18 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           ))}
         </div>
       </section>
+
+      {/* Phones: sticky purchase bar above the tab bar, like shopping apps. */}
+      {product.stock > 0 && (
+        <div className="fixed inset-x-0 bottom-14 z-10 flex items-center gap-3 border-t border-gray-200 bg-white px-4 py-2 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] sm:hidden">
+          <div className="mr-auto">
+            <p className="text-lg font-bold leading-tight">{rupees(product.price)}</p>
+            {off > 0 && <p className="text-xs text-gray-400 line-through">{rupees(product.mrp)}</p>}
+          </div>
+          <AddButton product={product} />
+          <BuyNowButton product={product} />
+        </div>
+      )}
     </div>
   );
 }
