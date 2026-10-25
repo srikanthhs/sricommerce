@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useCart } from "@/components/CartProvider";
-import { deliveryFee, FREE_DELIVERY_ABOVE, rupees } from "@/lib/pricing";
+import { deliveryFee, discountFor, FREE_DELIVERY_ABOVE, rupees, type CouponRule } from "@/lib/pricing";
 
 type Zone = { pincode: string; serviceable: boolean; area?: string; eta?: number };
+type AppliedCoupon = CouponRule & { code: string; description: string };
 
 export default function CartPage() {
   const { items, add, remove, clear } = useCart();
@@ -14,9 +15,42 @@ export default function CartPage() {
   const [checked, setChecked] = useState<Zone | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
   const fee = deliveryFee(subtotal);
+  // The discount follows the cart as it changes; the server re-checks it when the order is placed.
+  const discount = coupon ? discountFor(coupon, subtotal) : 0;
+  const total = subtotal - discount + fee;
+
+  // Prefill the address from the shopper's last order.
+  useEffect(() => {
+    fetch("/api/me/address")
+      .then((r) => r.json())
+      .then(({ address: last }) => {
+        if (!last) return;
+        setAddress((a) => a || last.address);
+        setPincode((p) => p || last.pincode);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function applyCoupon(code: string) {
+    setCouponError(null);
+    const res = await fetch("/api/coupons/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, subtotal }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setCoupon(null);
+      return setCouponError(data.error);
+    }
+    setCoupon(data.coupon);
+  }
 
   const zone = checked?.pincode === pincode ? checked : null;
 
@@ -33,7 +67,12 @@ export default function CartPage() {
     const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: items.map(({ productId, qty }) => ({ productId, qty })), address, pincode }),
+      body: JSON.stringify({
+        items: items.map(({ productId, qty }) => ({ productId, qty })),
+        address,
+        pincode,
+        coupon: coupon?.code,
+      }),
     });
     const data = await res.json();
     setBusy(false);
@@ -102,12 +141,45 @@ export default function CartPage() {
         </div>
 
         <div className="rounded-2xl bg-white p-4 text-sm">
+          <h2 className="mb-2 font-bold">Coupons</h2>
+          {coupon ? (
+            <div className="flex items-center justify-between rounded-lg border border-dashed border-green-600 bg-green-50 p-2">
+              <div>
+                <p className="font-semibold text-green-800">{coupon.code} applied</p>
+                <p className="text-xs text-green-700">
+                  {discount > 0 ? coupon.description : `Add ${rupees(coupon.min_subtotal - subtotal)} more to use this coupon`}
+                </p>
+              </div>
+              <button onClick={() => setCoupon(null)} className="text-xs font-semibold text-red-600">Remove</button>
+            </div>
+          ) : (
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (couponInput.trim()) applyCoupon(couponInput.trim());
+              }}
+            >
+              <input
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                placeholder="Enter coupon code"
+                className="flex-1 rounded-lg border border-gray-300 p-2 uppercase outline-none focus:border-green-700"
+              />
+              <button className="rounded-lg border border-green-700 px-3 font-semibold text-green-700">Apply</button>
+            </form>
+          )}
+          {couponError && <p className="mt-2 text-xs text-red-600">{couponError}</p>}
+        </div>
+
+        <div className="rounded-2xl bg-white p-4 text-sm">
           <h2 className="mb-2 font-bold">Bill details</h2>
           <Row label="Items total" value={rupees(subtotal)} />
+          {discount > 0 && <Row label={`Coupon ${coupon!.code}`} value={`−${rupees(discount)}`} green />}
           <Row label="Delivery fee" value={fee ? rupees(fee) : "FREE"} />
           {fee > 0 && <p className="text-xs text-gray-500">Add {rupees(FREE_DELIVERY_ABOVE - subtotal)} more for free delivery</p>}
           <div className="mt-2 border-t pt-2">
-            <Row label="Grand total" value={rupees(subtotal + fee)} bold />
+            <Row label="Grand total" value={rupees(total)} bold />
           </div>
           <p className="mt-3 text-xs text-gray-500">Payment: Cash on delivery</p>
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -116,7 +188,7 @@ export default function CartPage() {
             disabled={busy || !zone?.serviceable || address.trim().length < 10}
             className="mt-3 w-full rounded-lg bg-green-700 py-3 font-semibold text-white disabled:opacity-50"
           >
-            Place order · {rupees(subtotal + fee)}
+            Place order · {rupees(total)}
           </button>
         </div>
       </aside>
@@ -124,9 +196,9 @@ export default function CartPage() {
   );
 }
 
-function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+function Row({ label, value, bold, green }: { label: string; value: string; bold?: boolean; green?: boolean }) {
   return (
-    <div className={`flex justify-between py-0.5 ${bold ? "font-bold" : ""}`}>
+    <div className={`flex justify-between py-0.5 ${bold ? "font-bold" : ""} ${green ? "text-green-700" : ""}`}>
       <span>{label}</span>
       <span>{value}</span>
     </div>

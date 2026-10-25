@@ -5,7 +5,9 @@ A Blinkit / Instamart style quick commerce web app (MVP).
 ## What works today
 
 - **Customer:** phone + OTP login, category browsing, search, cart (saved in the browser), delivery address with pincode serviceability check, cash-on-delivery checkout, order tracking (placed → packed → out for delivery → delivered), cancel before packing.
-- **Store admin (`/admin`):** order list with one-click status updates, inventory table to edit price, stock and listing.
+- **Store admin (`/admin`):** today's orders and sales, order list with one-click status updates, inventory table to edit price, stock and listing, an add-product form, and coupon management.
+- **Coupons:** percent or flat discounts with a minimum order, optional cap and first-order-only rule. Seeded with `WELCOME50` and `SAVE30`.
+- **Convenience:** checkout remembers the last delivery address, and past orders have an "Order again" button.
 - Stock is checked and decremented in a transaction when an order is placed, and returned when an order is cancelled.
 
 ## Run it

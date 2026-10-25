@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Pool as PgPool, PoolClient } from "pg";
-import { seedCategories, seedProducts, seedZones } from "./seed";
+import { seedCategories, seedCoupons, seedProducts, seedZones } from "./seed";
 
 // Postgres everywhere. In production DATABASE_URL points at a hosted database (e.g. Neon);
 // without it, local dev uses PGlite, an embedded Postgres stored in ./data/pglite.
@@ -46,6 +46,15 @@ const SCHEMA = `
     subtotal INTEGER NOT NULL, delivery_fee INTEGER NOT NULL, total INTEGER NOT NULL,
     payment_method TEXT NOT NULL DEFAULT 'cod', eta_minutes INTEGER NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+  CREATE TABLE IF NOT EXISTS coupons (
+    code TEXT PRIMARY KEY, description TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('percent', 'flat')), value INTEGER NOT NULL,
+    min_subtotal INTEGER NOT NULL DEFAULT 0, max_discount INTEGER,
+    first_order_only INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE TABLE IF NOT EXISTS order_items (
     order_id INTEGER NOT NULL REFERENCES orders(id), product_id INTEGER NOT NULL REFERENCES products(id),
@@ -100,6 +109,13 @@ async function init(): Promise<Driver> {
   const driver = url ? await pgDriver(url) : await pgliteDriver();
   for (const stmt of SCHEMA.split(";").filter((s) => s.trim())) await driver.query(stmt);
   await seed(driver);
+  // Starter coupons. ON CONFLICT keeps any changes made from the admin page.
+  for (const c of seedCoupons) {
+    await driver.query(
+      "INSERT INTO coupons (code, description, kind, value, min_subtotal, max_discount, first_order_only) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (code) DO NOTHING",
+      [c.code, c.description, c.kind, c.value, c.minSubtotal, c.maxDiscount, c.firstOrderOnly ? 1 : 0],
+    );
+  }
   // Early databases were seeded with "(placeholder)" zone names that customers could see.
   await driver.query("UPDATE zones SET area = replace(area, ' (placeholder)', '') WHERE area LIKE '% (placeholder)'");
   return driver;

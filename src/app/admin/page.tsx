@@ -2,19 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser, isAdmin } from "@/lib/auth";
 import { listCategories, listProducts } from "@/lib/catalog";
-import { listOrders } from "@/lib/orders";
+import { listCoupons } from "@/lib/coupons";
+import { listOrders, salesToday } from "@/lib/orders";
 import { rupees } from "@/lib/pricing";
 import { STATUS_LABEL } from "@/lib/types";
-import { OrderStatusControl, ProductRow } from "./client";
+import { AddProductForm, CouponForm, CouponToggle, OrderStatusControl, ProductRow } from "./client";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   if (!isAdmin(await currentUser())) notFound();
-  const [orders, products, categoryList] = await Promise.all([
+  const [orders, products, categoryList, coupons, today] = await Promise.all([
     listOrders(),
     listProducts({ includeInactive: true }),
     listCategories(),
+    listCoupons(),
+    salesToday(),
   ]);
   const categories = new Map(categoryList.map((c) => [c.id, c.name]));
   const open = orders.filter((o) => o.status !== "delivered" && o.status !== "cancelled");
@@ -22,8 +25,13 @@ export default async function AdminPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="mb-1 text-lg font-bold">Store dashboard</h1>
-        <p className="mb-4 text-sm text-gray-500">{open.length} open orders · {products.filter((p) => p.stock < 10).length} products low on stock</p>
+        <h1 className="mb-3 text-lg font-bold">Store dashboard</h1>
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Orders today" value={String(today.orders)} />
+          <Stat label="Sales today" value={rupees(today.revenue)} />
+          <Stat label="Open orders" value={String(open.length)} />
+          <Stat label="Low on stock" value={String(products.filter((p) => p.stock < 10).length)} />
+        </div>
         <div className="overflow-x-auto rounded-2xl bg-white">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -61,6 +69,46 @@ export default async function AdminPage() {
           </table>
         </div>
       </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-bold">Add a product</h2>
+        <AddProductForm categories={categoryList} />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-bold">Coupons</h2>
+        <div className="overflow-x-auto rounded-2xl bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+              <tr><th className="p-3">Code</th><th className="p-3">Offer</th><th className="p-3">Min order</th><th className="p-3">Rules</th><th className="p-3">Active</th></tr>
+            </thead>
+            <tbody className="divide-y">
+              {coupons.map((c) => (
+                <tr key={c.code}>
+                  <td className="p-3 font-semibold">{c.code}</td>
+                  <td className="p-3">
+                    {c.kind === "percent" ? `${c.value}% off` : `${rupees(c.value)} off`}
+                    {c.max_discount != null && ` (max ${rupees(c.max_discount)})`}
+                  </td>
+                  <td className="p-3">{c.min_subtotal ? rupees(c.min_subtotal) : "—"}</td>
+                  <td className="p-3">{c.first_order_only ? "First order only" : "Any order"}</td>
+                  <td className="p-3"><CouponToggle code={c.code} active={!!c.active} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <CouponForm />
+      </section>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-white p-4">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="mt-1 text-xl font-bold">{value}</p>
     </div>
   );
 }

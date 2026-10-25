@@ -25,6 +25,12 @@ export function listProducts(opts: { categoryId?: number; q?: string; includeIna
   return all<Product>(sql, params);
 }
 
+export function getProducts(ids: number[]): Promise<Product[]> {
+  const clean = ids.filter(Number.isInteger);
+  if (!clean.length) return Promise.resolve([]);
+  return all<Product>("SELECT * FROM products WHERE id = ANY($1::int[])", [`{${clean.join(",")}}`]);
+}
+
 type Zone = { pincode: string; area: string; eta_minutes: number };
 
 // Delivery ETA for pincodes that aren't listed in the zones table.

@@ -1,9 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { currentUser, isAdmin } from "@/lib/auth";
+import { getProducts } from "@/lib/catalog";
 import { getOrder } from "@/lib/orders";
 import { rupees } from "@/lib/pricing";
 import { ORDER_FLOW, STATUS_LABEL } from "@/lib/types";
-import { AutoRefresh, CancelOrderButton } from "./client";
+import { AutoRefresh, CancelOrderButton, OrderAgainButton } from "./client";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const found = await getOrder(Number(id));
   if (!found || (found.order.user_id !== user.id && !isAdmin(user))) notFound();
   const { order, items } = found;
+  const products = await getProducts(items.map((it) => it.product_id));
   const step = ORDER_FLOW.indexOf(order.status);
   const open = order.status !== "delivered" && order.status !== "cancelled";
 
@@ -40,6 +42,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           </ol>
         )}
         {order.status === "placed" && order.user_id === user.id && <CancelOrderButton orderId={order.id} />}
+        {order.user_id === user.id && (
+          <OrderAgainButton
+            lines={items.map((it) => ({ qty: it.qty, product: products.find((p) => p.id === it.product_id) }))}
+          />
+        )}
       </div>
 
       <div className="rounded-2xl bg-white p-5 text-sm">
@@ -53,6 +60,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           ))}
         </ul>
         <div className="mt-2 space-y-1 border-t pt-2">
+          {order.discount > 0 && (
+            <div className="flex justify-between text-green-700"><span>Coupon {order.coupon_code}</span><span>−{rupees(order.discount)}</span></div>
+          )}
           <div className="flex justify-between"><span>Delivery fee</span><span>{order.delivery_fee ? rupees(order.delivery_fee) : "FREE"}</span></div>
           <div className="flex justify-between font-bold"><span>Total ({order.payment_method.toUpperCase()})</span><span>{rupees(order.total)}</span></div>
         </div>

@@ -46,3 +46,9 @@ export const seedZones = [
   { pincode: "560002", area: "Zone 2", eta: 15 },
   { pincode: "560003", area: "Zone 3", eta: 20 },
 ];
+
+// Percent coupons store the percentage in `value`; flat coupons store paise.
+export const seedCoupons = [
+  { code: "WELCOME50", description: "50% off your first order, up to ₹100", kind: "percent", value: 50, minSubtotal: 9900, maxDiscount: 10000, firstOrderOnly: true },
+  { code: "SAVE30", description: "₹30 off on orders above ₹299", kind: "flat", value: 3000, minSubtotal: 29900, maxDiscount: null, firstOrderOnly: false },
+];

@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     ? body.items.map((i: { productId: unknown; qty: unknown }) => ({ productId: Number(i.productId), qty: Number(i.qty) }))
     : [];
   try {
-    const order = await placeOrder(user.id, lines, String(body.address ?? ""), String(body.pincode ?? ""));
+    const order = await placeOrder(user.id, lines, String(body.address ?? ""), String(body.pincode ?? ""), body.coupon);
     return NextResponse.json({ order }, { status: 201 });
   } catch (err) {
     if (err instanceof OrderError) return NextResponse.json({ error: err.message }, { status: 400 });

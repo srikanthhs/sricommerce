@@ -1,5 +1,6 @@
 import { all, one, tx } from "./db";
 import { findZone } from "./catalog";
+import { CouponError, couponDiscount, normalizeCode } from "./coupons";
 import { deliveryFee, MAX_QTY_PER_ITEM } from "./pricing";
 import { ORDER_FLOW, type Order, type OrderItem, type OrderStatus, type Product } from "./types";
 
@@ -7,7 +8,13 @@ export class OrderError extends Error {}
 
 export type CartLine = { productId: number; qty: number };
 
-export async function placeOrder(userId: number, lines: CartLine[], address: string, pincode: string): Promise<Order> {
+export async function placeOrder(
+  userId: number,
+  lines: CartLine[],
+  address: string,
+  pincode: string,
+  couponCode?: string,
+): Promise<Order> {
   if (!lines.length) throw new OrderError("Your cart is empty.");
   if (address.trim().length < 10) throw new OrderError("Please enter a complete delivery address.");
   const zone = await findZone(pincode);
@@ -29,9 +36,19 @@ export async function placeOrder(userId: number, lines: CartLine[], address: str
       items.push({ p, qty });
     }
     const fee = deliveryFee(subtotal);
+    let discount = 0;
+    const code = normalizeCode(couponCode);
+    if (code) {
+      try {
+        discount = (await couponDiscount(code, subtotal, userId, q)).discount;
+      } catch (err) {
+        if (err instanceof CouponError) throw new OrderError(err.message);
+        throw err;
+      }
+    }
     const { rows } = await q.query<Order>(
-      "INSERT INTO orders (user_id, address, pincode, subtotal, delivery_fee, total, eta_minutes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
-      [userId, address.trim(), pincode, subtotal, fee, subtotal + fee, zone.eta_minutes],
+      "INSERT INTO orders (user_id, address, pincode, subtotal, delivery_fee, discount, coupon_code, total, eta_minutes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      [userId, address.trim(), pincode, subtotal, fee, discount, code || null, subtotal - discount + fee, zone.eta_minutes],
     );
     const order = rows[0];
     for (const { p, qty } of items) {
@@ -72,4 +89,23 @@ export function setOrderStatus(id: number, status: OrderStatus): Promise<Order> 
     const { rows } = await q.query<Order>("UPDATE orders SET status = $1, updated_at = now() WHERE id = $2 RETURNING *", [status, id]);
     return rows[0];
   });
+}
+
+export function lastAddress(userId: number) {
+  return one<{ address: string; pincode: string }>(
+    "SELECT address, pincode FROM orders WHERE user_id = $1 ORDER BY id DESC LIMIT 1",
+    [userId],
+  );
+}
+
+export async function salesToday() {
+  // "Today" in India time, since that's where the shop operates.
+  const [row] = await all<{ orders: number; revenue: number; open: number }>(`
+    SELECT COUNT(*)::int AS orders,
+           COALESCE(SUM(total) FILTER (WHERE status <> 'cancelled'), 0)::int AS revenue,
+           COUNT(*) FILTER (WHERE status IN ('placed', 'packed', 'out_for_delivery'))::int AS open
+    FROM orders
+    WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::date = (now() AT TIME ZONE 'Asia/Kolkata')::date
+  `);
+  return row;
 }

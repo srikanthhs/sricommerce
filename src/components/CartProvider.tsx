@@ -9,6 +9,7 @@ type CartCtx = {
   items: CartItem[];
   qtyOf: (productId: number) => number;
   add: (item: Omit<CartItem, "qty">, maxStock: number) => void;
+  addMany: (lines: { item: Omit<CartItem, "qty">; qty: number; maxStock: number }[]) => number;
   remove: (productId: number) => void;
   clear: () => void;
 };
@@ -47,6 +48,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       } else if (limit > 0) {
         update([...items, { ...item, qty: 1 }]);
       }
+    },
+    // Adds several lines at once (used by "Order again"); returns how many units were added.
+    addMany: (lines) => {
+      const next = [...items];
+      let added = 0;
+      for (const { item, qty, maxStock } of lines) {
+        const limit = Math.min(maxStock, MAX_QTY_PER_ITEM);
+        const i = next.findIndex((c) => c.productId === item.productId);
+        const current = i >= 0 ? next[i].qty : 0;
+        const want = Math.min(current + qty, limit);
+        if (want <= current) continue;
+        added += want - current;
+        if (i >= 0) next[i] = { ...next[i], ...item, qty: want };
+        else next.push({ ...item, qty: want });
+      }
+      update(next);
+      return added;
     },
     remove: (id) =>
       update(items.flatMap((i) => (i.productId !== id ? [i] : i.qty > 1 ? [{ ...i, qty: i.qty - 1 }] : []))),
