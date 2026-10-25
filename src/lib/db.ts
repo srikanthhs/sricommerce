@@ -56,6 +56,15 @@ const SCHEMA = `
     first_order_only INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
+  CREATE TABLE IF NOT EXISTS reviews (
+    product_id INTEGER NOT NULL REFERENCES products(id), user_id INTEGER NOT NULL REFERENCES users(id),
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5), title TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (product_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS wishlist (
+    user_id INTEGER NOT NULL REFERENCES users(id), product_id INTEGER NOT NULL REFERENCES products(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, product_id)
+  );
   CREATE TABLE IF NOT EXISTS order_items (
     order_id INTEGER NOT NULL REFERENCES orders(id), product_id INTEGER NOT NULL REFERENCES products(id),
     name TEXT NOT NULL, price INTEGER NOT NULL, qty INTEGER NOT NULL

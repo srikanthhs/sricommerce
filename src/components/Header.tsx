@@ -25,6 +25,7 @@ export async function Header() {
           )}
           {user ? (
             <>
+              <Link href="/wishlist" className="text-sm font-medium text-gray-700">Wishlist</Link>
               <Link href="/orders" className="text-sm font-medium text-gray-700">My Orders</Link>
               <LogoutButton />
             </>

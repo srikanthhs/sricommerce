@@ -1,18 +1,24 @@
 import Link from "next/link";
-import { listCategories, listProducts } from "@/lib/catalog";
+import { filtersFromParams, listCategories, listProducts } from "@/lib/catalog";
+import { SortFilterBar } from "@/components/SortFilterBar";
 import { ProductCard } from "@/components/ProductCard";
 import type { Product } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const q = (await searchParams).q?.trim();
-  const [categories, products] = await Promise.all([listCategories(), listProducts({ q })]);
+export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams;
+  const q = typeof sp.q === "string" ? sp.q.trim() : undefined;
+  const [categories, products] = await Promise.all([
+    listCategories(),
+    listProducts(q ? { q, ...filtersFromParams(sp) } : {}),
+  ]);
 
   if (q) {
     return (
       <section>
-        <h1 className="mb-4 text-lg font-bold">Results for “{q}”</h1>
+        <h1 className="mb-2 text-lg font-bold">Results for “{q}”</h1>
+        <SortFilterBar count={products.length} />
         {products.length ? <Grid products={products} /> : <p className="text-gray-500">No products found.</p>}
       </section>
     );

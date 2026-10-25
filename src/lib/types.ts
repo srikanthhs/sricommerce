@@ -2,6 +2,12 @@ export type Category = { id: number; slug: string; name: string; emoji: string }
 export type Product = {
   id: number; category_id: number; name: string; unit: string;
   price: number; mrp: number; stock: number; emoji: string; active: number;
+  // Present on catalog queries: average rating (1 decimal) and number of reviews.
+  rating_avg?: number | null; rating_count?: number;
+};
+export type Review = {
+  product_id: number; user_id: number; rating: number; title: string; body: string;
+  created_at: Date | string; author: string;
 };
 export type User = { id: number; phone: string | null; email: string | null; name: string | null };
 export type OrderStatus = "placed" | "packed" | "out_for_delivery" | "delivered" | "cancelled";
