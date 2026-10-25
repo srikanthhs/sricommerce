@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { boughtTogether, canReview, getProduct, isWishlisted, listCategories, listReviews, similarProducts } from "@/lib/catalog";
 import { rupees } from "@/lib/pricing";
 import { AddButton } from "@/components/AddButton";
+import { BuyNowButton } from "@/components/BuyNowButton";
 import { ProductCard } from "@/components/ProductCard";
 import { Stars } from "@/components/Stars";
 import { WishlistButton } from "@/components/WishlistButton";
@@ -61,6 +62,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <AddButton product={product} />
+            <BuyNowButton product={product} />
             <WishlistButton productId={product.id} initial={wishlisted} loggedIn={!!user} />
           </div>
         </div>

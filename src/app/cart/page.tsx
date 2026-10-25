@@ -2,14 +2,40 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useCart } from "@/components/CartProvider";
-import { deliveryFee, discountFor, FREE_DELIVERY_ABOVE, rupees, type CouponRule } from "@/lib/pricing";
+import { useCart, type CartItem } from "@/components/CartProvider";
+import { BUY_NOW_KEY, type BuyNowItem } from "@/components/BuyNowButton";
+import { deliveryFee, discountFor, FREE_DELIVERY_ABOVE, MAX_QTY_PER_ITEM, rupees, type CouponRule } from "@/lib/pricing";
 
 type Zone = { pincode: string; serviceable: boolean; area?: string; eta?: number };
 type AppliedCoupon = CouponRule & { code: string; description: string };
 
 export default function CartPage() {
-  const { items, add, remove, clear } = useCart();
+  const cart = useCart();
+  // "Buy now" checks out a single product without touching the saved cart.
+  const [buyNow, setBuyNow] = useState<BuyNowItem | null>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("buynow") !== "1") return;
+    try {
+      const saved = sessionStorage.getItem(BUY_NOW_KEY);
+      // Read after mount so server and client markup match.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved) setBuyNow(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const items: CartItem[] = buyNow ? [buyNow] : cart.items;
+  const setBuyNowQty = (qty: number) => {
+    if (!buyNow) return;
+    if (qty < 1) {
+      setBuyNow(null);
+      window.history.replaceState(null, "", "/cart");
+      return;
+    }
+    setBuyNow({ ...buyNow, qty: Math.min(qty, buyNow.maxStock, MAX_QTY_PER_ITEM) });
+  };
+  const add = (i: CartItem) => (buyNow ? setBuyNowQty(buyNow.qty + 1) : cart.add(i, Infinity));
+  const remove = (id: number) => (buyNow ? setBuyNowQty(buyNow.qty - 1) : cart.remove(id));
   const [address, setAddress] = useState("");
   const [pincode, setPincode] = useState("");
   const [checked, setChecked] = useState<Zone | null>(null);
@@ -78,7 +104,13 @@ export default function CartPage() {
     setBusy(false);
     if (res.status === 401) return (window.location.href = "/login?next=/cart");
     if (!res.ok) return setError(data.error);
-    clear();
+    if (buyNow) {
+      try {
+        sessionStorage.removeItem(BUY_NOW_KEY);
+      } catch {}
+    } else {
+      cart.clear();
+    }
     window.location.href = `/orders/${data.order.id}`;
   }
 
@@ -95,7 +127,8 @@ export default function CartPage() {
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_360px]">
       <section className="rounded-2xl bg-white p-4">
-        <h1 className="mb-3 text-lg font-bold">My Cart</h1>
+        <h1 className="mb-3 text-lg font-bold">{buyNow ? "Buy now" : "My Cart"}</h1>
+        {buyNow && <p className="-mt-2 mb-2 text-xs text-gray-500">Checking out just this item. Your cart is saved for later.</p>}
         <ul className="divide-y">
           {items.map((i) => (
             <li key={i.productId} className="flex items-center gap-3 py-3">
@@ -108,7 +141,7 @@ export default function CartPage() {
                 <button onClick={() => remove(i.productId)} className="px-1">−</button>
                 <span>{i.qty}</span>
                 {/* Stock is re-checked on the server when the order is placed. */}
-                <button onClick={() => add(i, Infinity)} className="px-1">+</button>
+                <button onClick={() => add(i)} className="px-1">+</button>
               </div>
               <p className="w-16 text-right text-sm font-semibold">{rupees(i.qty * i.price)}</p>
             </li>
